@@ -1,0 +1,31 @@
+---
+description: nonFood-vue-cms 專案規範
+globs:
+alwaysApply: true
+---
+此規範適用於 `nonFood-vue-cms`，內容依現有 `README.md`、`CLAUDE.md` 與元件文件整理。
+
+## 專案背景
+
+- 此專案為 `Vue 3 + TypeScript + Ant Design Vue 4` 的 CMS 類前端。
+- 架構偏向配置驅動的 CRUD 模式，並支援 `api.xxx.mock.ts` 的 mock 開發流程。
+- API 結構包含實際 API、mock API、generated API 與 schema。
+
+## 開發規範
+
+- 你 MUST 沿用既有 CRUD 組件模式與表單元件命名。
+- 你 MUST 優先使用 `apiConfig` 統一管理 `getList / getOne / submit / delete`。
+- 你 MUST 依現有型別與 response 結構處理成功與錯誤分支。
+- 你 MUST 保持 PascalCase / camelCase 等既有命名規範。
+- 若為前端先行開發，你 MAY 使用 mock API 模式，但最終介接時 MUST 對齊實際 API 型別。
+
+## 交付限制
+
+- 你 MUST NOT 直接修改 generated API 檔案，除非是在重新生成流程中產出。
+- 你 MUST 將 mock、實際 API、deploy / workflow 變更分開處理。
+
+## Deploy 規範
+
+- README 目前以 `dev` / `sit` / `uat` / `prod` 建置流程為主。
+- 若沒有文件明確說明自動部署機制，你 MUST 預設所有非開發環境部署都需人工確認。
+- `prod` MUST 保持人工核准。

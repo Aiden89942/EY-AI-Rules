@@ -1,0 +1,146 @@
+# Template source: pspAdmin/.github/workflows/deploy-uat.yml
+name: Deploy PSPAdmin Admin UAT
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, Windows, pspAdmin-uat]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "16"
+
+      - name: Install Yarn and dependencies
+        shell: powershell
+        run: |
+          node -v
+          npm -v
+          npm i -g yarn@1.22.22
+          yarn -v
+          yarn install --frozen-lockfile
+      - name: Build UAT
+        shell: powershell
+        run: |
+          Write-Host "========================================"
+          Write-Host "[INFO] Build UAT - Debug Information"
+          Write-Host "========================================"
+          Write-Host "[INFO] Current working directory:"
+          Get-Location
+          Write-Host "[INFO] GITHUB_WORKSPACE: $env:GITHUB_WORKSPACE"
+          Write-Host "[INFO] Current commit:"
+          git rev-parse HEAD
+          Write-Host "[INFO] Checking if dist exists before build:"
+          if (Test-Path "$env:GITHUB_WORKSPACE\dist") {
+            Write-Host "[WARNING] dist directory already exists before build!"
+            (Get-ChildItem "$env:GITHUB_WORKSPACE\dist" -ErrorAction SilentlyContinue | Measure-Object).Count
+          } else {
+            Write-Host "[INFO] dist directory does not exist (expected)"
+          }
+          Write-Host ""
+          Write-Host "[INFO] Installing yarn..."
+          npm i -g yarn@1.22.22 | Out-Null
+          Write-Host "[INFO] Yarn version:"
+          yarn -v
+          Write-Host ""
+          Write-Host "[INFO] Checking package.json for build:uat script:"
+          Get-Content package.json | Select-String "build:uat"
+          Write-Host ""
+          Write-Host "[INFO] Starting yarn build:uat..."
+          Write-Host "========================================"
+          yarn build:uat
+          $BUILD_EXIT = $LASTEXITCODE
+          Write-Host "========================================"
+          Write-Host "[RESULT] Build command completed"
+          Write-Host "[RESULT] Build exit code: $BUILD_EXIT"
+          Write-Host ""
+          if ($BUILD_EXIT -ne 0) {
+            Write-Host "[ERROR] ========================================"
+            Write-Host "[ERROR] Build FAILED with exit code $BUILD_EXIT"
+            Write-Host "[ERROR] ========================================"
+            Write-Host "[INFO] Checking current directory contents:"
+            Get-ChildItem -Name
+            exit $BUILD_EXIT
+          }
+          Write-Host "[SUCCESS] Build command succeeded (exit code 0)"
+          Write-Host ""
+          Write-Host "[INFO] Checking if dist directory was created..."
+          $DIST_DIR = "$env:GITHUB_WORKSPACE\dist"
+          if (Test-Path $DIST_DIR) {
+            Write-Host "[SUCCESS] dist directory exists at: $DIST_DIR"
+            Write-Host "[INFO] Dist directory contents:"
+            Get-ChildItem $DIST_DIR -Name
+            Write-Host "[INFO] File count in dist:"
+            (Get-ChildItem $DIST_DIR -ErrorAction SilentlyContinue | Measure-Object).Count
+            if (Test-Path "$DIST_DIR\index.html") {
+              Write-Host "[SUCCESS] index.html found"
+              Write-Host "[INFO] index.html size:"
+              Get-Item "$DIST_DIR\index.html" | Select-Object Name, Length
+            } else {
+              Write-Host "[ERROR] index.html NOT found in dist!"
+              Write-Host "[INFO] Files in dist root:"
+              Get-ChildItem $DIST_DIR -Name
+              exit 1
+            }
+          } else {
+            Write-Host "[ERROR] dist directory was NOT created after build!"
+            Write-Host "[ERROR] This means yarn build:uat did not produce output"
+            Write-Host ""
+            Write-Host "[DEBUG] Current directory:"
+            Get-Location
+            Write-Host "[DEBUG] Current directory contents:"
+            Get-ChildItem -Name
+            Write-Host "[DEBUG] Checking for other possible output directories:"
+            if (Test-Path "build") {
+              Write-Host "[INFO] Found 'build' directory instead of 'dist'"
+              Get-ChildItem "build" -Name
+            }
+            if (Test-Path "output") {
+              Write-Host "[INFO] Found 'output' directory"
+              Get-ChildItem "output" -Name
+            }
+            exit 1
+          }
+          Write-Host "========================================"
+          Write-Host "[SUCCESS] Build verification completed"
+          Write-Host "========================================"
+      - name: Verify build output
+        shell: powershell
+        run: |
+          $SRC = "$env:GITHUB_WORKSPACE\dist"
+          if (-not (Test-Path $SRC)) {
+            Write-Host "[ERROR] dist directory not found: $SRC"
+            exit 1
+          }
+          if (-not (Test-Path "$SRC\index.html")) {
+            Write-Host "[ERROR] index.html not found in dist directory"
+            exit 1
+          }
+          Write-Host "[INFO] Build output verified successfully"
+      - name: Deploy dist -> E:\BI\UAT\pspAdmin (mirror)
+        shell: powershell
+        run: |
+          $SRC = "$env:GITHUB_WORKSPACE\dist"
+          $DST = "E:\BI\UAT\pspAdmin"
+          if (-not (Test-Path $DST)) {
+            Write-Host "[INFO] Creating destination directory: $DST"
+            New-Item -ItemType Directory -Path $DST -Force | Out-Null
+          }
+          Write-Host "[INFO] Starting deployment from $SRC to $DST"
+          $robocopyExit = 0
+          robocopy $SRC $DST /MIR /FFT /Z /R:3 /W:5 /NP
+          $robocopyExit = $LASTEXITCODE
+          if ($robocopyExit -ge 8) {
+            Write-Host "[ERROR] robocopy failed with exit code $robocopyExit"
+            exit $robocopyExit
+          }
+          Write-Host "[INFO] Deployment completed successfully (exit code: $robocopyExit)"
+          
+          $global:LASTEXITCODE = 0
+          exit 0

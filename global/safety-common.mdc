@@ -1,0 +1,27 @@
+---
+description: 所有專案共用的高風險操作安全規範
+globs:
+alwaysApply: true
+---
+此檔僅定義「安全與風險控制」；需求邊界與回應原則請以 `core-policy.mdc` 為主。
+你 MUST 將 deployment、credentials、CI、infra、production 相關變更視為高風險操作。
+
+## 通用安全規則
+
+- 你 MUST 優先採用最小且安全的修改。
+- 你 MUST NOT 在程式碼、註解、文件、log 或 commit message 中暴露 secret、token、帳密或內部網址。
+- 若需要新增套件、修改 CI、infra、workflow、production 設定，你 MUST 先說明影響範圍。
+- 商業邏輯、API、資料結構、需求邊界等限制請遵循 `core-policy.mdc`。
+
+## 危險操作限制
+
+- 你 MUST NOT 執行破壞性 git 指令，除非使用者明確要求。
+- 你 MUST NOT 繞過 branch protection、environment protection、人工核准或既有審核流程。
+- 你 MUST NOT 依靠推測直接建議 production deploy。
+- 在提出 deploy 或 rollback 建議前，你 MUST 先確認目標環境。
+- 在未確認前，你 MUST NOT 調整 infra / CI / deploy 核心設定。
+
+## 敏感目錄
+
+- `.github/workflows/`、`infra/`、`terraform/`、`helm/`、`docker/`、`k8s/`、production env 檔案皆視為受保護區域。
+- 任何受保護區域的變更都 MUST 附上風險說明與驗證方式。

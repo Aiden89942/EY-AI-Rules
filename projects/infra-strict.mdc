@@ -1,0 +1,24 @@
+---
+description: infra 類專案高安全規範
+globs:
+alwaysApply: true
+---
+此規範適用於 infrastructure、CI、deployment pipeline、環境設定與密鑰管理類 repo。
+
+## 高風險原則
+
+- 你 MUST 預設所有 infra 變更都是高風險。
+- 你 MUST NOT 在未明確核准下修改 production workflow、IAM、network policy、secret handling 或 infrastructure state。
+- 你 MUST NOT 自行推測安全預設值並直接落地到 production。
+
+## 變更控制
+
+- 任何 production 相關變更 MUST 經過人工核准。
+- 任何可能改變狀態的指令 MUST 先列出範圍、風險與回滾方式。
+- 在提出 apply / deploy / migration 建議前，你 MUST 先提供 blast radius 與 validation plan。
+
+## 限制
+
+- Automatic production deployment is prohibited.
+- 你 MUST NOT 直接 push 到受保護的 infra branch。
+- Terraform、Helm、Docker、workflow、secret 相關變更都 MUST 經過授權 owner review。

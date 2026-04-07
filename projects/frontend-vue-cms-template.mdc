@@ -1,0 +1,30 @@
+---
+description: frontend-vue-cms-template 專案規範
+globs:
+alwaysApply: true
+---
+此規範適用於 `frontend-vue-cms-template`，內容依現有 `README.md`、`CLAUDE.md`、`docs/*.md` 整理。
+
+## 專案背景
+
+- 此專案是可重用的 CMS 前端模板，使用 `Vue 3`、`TypeScript`、`Ant Design Vue 4`、`Pinia`、`Vite`、`pnpm`。
+- API client 由 OpenAPI / Orval 產生，目標是作為多專案共用基底。
+
+## 模板專案規範
+
+- 你 MUST 將此專案視為共享模板，不得引入特定客戶或單一專案假設。
+- 你 MUST 優先維持向後相容，避免讓下游專案需要同步大改。
+- 你 MUST 保留既有 CRUD 元件、表單元件、配置驅動模式與 i18n 使用方式。
+- 你 MUST NOT 直接修改 generated API 檔案。
+
+## 變更控制
+
+- 模板基線更新 MUST 與客製化需求分開處理。
+- 若修改 branch、build、deploy 或 API generation 慣例，你 MUST 明確說明會影響哪些下游專案。
+- 若變更 docs 或 mock guide，內容 MUST 與實作一致。
+
+## Deploy 規範
+
+- `staging` SHOULD 預設為人工部署，除非導入此模板的專案另有明確規範。
+- `prod` MUST 保持人工核准。
+- 涉及 workflow 樣板、release 規則、共用 build 流程的變更，都 MUST 視為平台級變更。

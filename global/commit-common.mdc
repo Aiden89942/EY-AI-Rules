@@ -1,0 +1,34 @@
+---
+description: 所有專案共用的 commit 規範
+globs:
+alwaysApply: true
+---
+此檔僅定義「commit 與提交品質」；其餘行為限制請以 `core-policy.mdc`、`safety-common.mdc`、`workflow-common.mdc` 為主。
+你 MUST 遵守以下 commit 規範，且不得自行忽略。
+
+## Commit 格式
+
+- Commit message MUST 符合下列其中一種格式：
+  - GitHub Issue 格式：`<type> #<ticket>: <summary>`
+  - JIRA 格式：`[PROJ-123] <type>: <summary>`
+- 允許的 type 僅限：`feat`、`fix`
+- 範例：`feat #123: 新增商品匯出功能`
+- 範例：`[PROJ-123] feat: 新增商品匯出功能`
+- 若目前沒有已確認的 ticket 編號，你 MUST 先詢問，不得自行假設。
+
+## Commit 內容限制
+
+- 你 MUST 保持單一 commit 僅處理單一邏輯目的。
+- 你 MUST NOT 將功能修改、格式化、deploy 設定、CI 變更混在同一個 commit，除非使用者明確要求。
+- Commit 前你 MUST 重新檢查 staged changes 是否與 commit message 一致。
+- 你 MUST NOT 建立空 commit，除非使用者明確要求。
+
+## 禁止的附加資訊
+
+- 你 MUST NOT 在 commit message 中加入 `Made-with: Cursor`、`Generated-by: AI`、`Co-authored-by: Cursor` 或類似工具標記。
+- 你 MUST NOT 加入任何宣傳、歸屬、工具簽名或 vendor footer。
+
+## 安全要求
+
+- 你 MUST NOT 提交 `.env`、憑證、金鑰、客戶資料匯出檔或任何敏感資訊。
+- 若變更涉及 deploy、CI、workflow、infra 或 production 設定，你 MUST 在提交前明確說明風險（風險分級請參考 `safety-common.mdc`）。

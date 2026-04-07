@@ -1,0 +1,139 @@
+# Template source: member-cmsweb-vue/.github/workflows/qsquare-cmsweb-github-action.yaml
+name: Deploy QSquare UAT CMS Web to ECS
+
+on:
+  push:
+    branches:
+      - uat
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Deployment profile (should be 'uat')"
+        required: true
+        default: 'uat'
+      tag:
+        description: 'Git tag or version'
+        required: true
+        default: 'v1.0.0'
+
+env:
+  AWS_REGION: ap-northeast-1
+  AWS_ECR_ACCOUNT: 804353999651.dkr.ecr.ap-northeast-1.amazonaws.com
+  REPO_NAME: qsquare-uat-cms-web
+  TASK_FAMILY: QSquare-TaskDef-CMS-Web
+  ECS_CLUSTER: qsquare-uat-cms
+  ECS_SERVICE: QSquare-UAT-Service-CMS-Web2
+  BASE_TASK_JSON: QSquare-TaskDef-CMS-Web-UAT.json
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # ---------------- Node.js + pnpm 安裝 ----------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Enable Corepack & pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.5.2 --activate
+
+      # ---------------- pnpm store cache ----------------
+      - name: Cache pnpm store
+        uses: actions/cache@v3
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-
+
+      # ---------------- node_modules cache（可選） ----------------
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            node-modules-
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Application
+        run: pnpm build:uat:no-check
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      # ---------------- AWS 配置 ----------------
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ---------------- 設定 Docker Image Tag ----------------
+      - name: Set IMAGE_TAG
+        run: |
+          TAG="${{ github.event.inputs.tag || 'v1.0.0' }}"
+          IMAGE_TAG="${TAG}.${{ github.run_number }}"
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+          echo "Using image tag: ${IMAGE_TAG}"
+
+      # ---------------- Docker Build & Push ----------------
+      - name: Build & Push Docker Image
+        run: |
+          docker build -f ./deploy/docker/DockerfileUAT -t "${AWS_ECR_ACCOUNT}/${REPO_NAME}:${IMAGE_TAG}" .
+          docker push "${AWS_ECR_ACCOUNT}/${REPO_NAME}:${IMAGE_TAG}"
+          docker rmi "${AWS_ECR_ACCOUNT}/${REPO_NAME}:${IMAGE_TAG}" || true
+          echo "✅ Docker image pushed: ${AWS_ECR_ACCOUNT}/${REPO_NAME}:${IMAGE_TAG}"
+
+      # ---------------- 準備 ECS Task JSON ----------------
+      - name: Prepare ECS Task Definition JSON
+        run: |
+          cd deploy/aws_ecr
+          echo "Cleaning up old TaskDef outputs..."
+          find . -type f -name 'QSquare-TaskDef-CMS-Web-UAT_*.json' -exec rm {} \;
+          output_file="QSquare-TaskDef-CMS-Web-UAT_${IMAGE_TAG}.json"
+          sed "s|\"image\": \".*\"|\"image\": \"${AWS_ECR_ACCOUNT}/${REPO_NAME}:${IMAGE_TAG}\"|g" \
+            ${BASE_TASK_JSON} > "$output_file"
+          echo "TASKDEF_FILE=$output_file" >> $GITHUB_ENV
+
+      # ---------------- 註冊 ECS Task Definition ----------------
+      - name: Register ECS Task Definition
+        run: |
+          cd deploy/aws_ecr
+          aws ecs register-task-definition \
+            --region ${AWS_REGION} \
+            --family ${TASK_FAMILY} \
+            --cli-input-json file://$TASKDEF_FILE
+          REVISION=$(aws ecs describe-task-definition \
+            --region ${AWS_REGION} \
+            --task-definition=${TASK_FAMILY} \
+            --query 'taskDefinition.revision' \
+            --output text)
+          echo "REVISION=$REVISION" >> $GITHUB_ENV
+          echo "✅ Registered ECS Task Definition: ${TASK_FAMILY}:${REVISION}"
+
+      # ---------------- 更新 ECS Service ----------------
+      - name: Update ECS Service
+        run: |
+          aws ecs update-service \
+            --cluster=${ECS_CLUSTER} \
+            --region=${AWS_REGION} \
+            --service=${ECS_SERVICE} \
+            --task-definition ${TASK_FAMILY}:${REVISION} \
+            --desired-count 1 \
+            --force-new-deployment
+          echo "✅ ECS service update started."

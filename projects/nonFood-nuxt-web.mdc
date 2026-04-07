@@ -1,0 +1,39 @@
+---
+description: nonFood-nuxt-web 專案規範
+globs:
+alwaysApply: true
+---
+此規範適用於 `nonFood-nuxt-web`，內容依現有 `README.md`、`.cursor/rules/*.mdc`、`CLAUDE.md` 整理。
+
+## 專案背景
+
+- 此專案使用 `Nuxt 3`、`Tailwind CSS`、`Pinia`、`Axios`、`pnpm`。
+- API 以 Orval / OpenAPI 生成型別與 client，需維持型別安全。
+- 專案強調 `Components -> Stores -> DataService -> Cache` 的分層，不得任意打破。
+
+## 開發規範
+
+- 你 MUST 遵守既有資料層與快取結構，不得把格式化或 UI 邏輯塞入 DataService。
+- 你 MUST 保持 store 響應式使用方式，不得以解構破壞 reactive 行為。
+- 你 MUST 延續既有樣式與 class 順序，避免無意義格式調整。
+- 你 MUST 優先使用既有元件與專案工具，例如 `MainContainer`、`Section`、`$clx`、`Icon`。
+
+## API 與生成檔限制
+
+- 你 MUST 優先使用既有 generated API 與 schema。
+- 你 MUST NOT 直接修改自動生成檔，除非使用者明確要求重新生成策略。
+- 若需調整 API 相關行為，你 MUST 先確認是改 DataService、Store 還是 API generator。
+
+## Commit 與交付
+
+- 你 MUST 使用共用 commit 格式（GitHub 或 JIRA 任一）：
+  - `<type> #<ticket>: <summary>`
+  - `[PROJ-123] <type>: <summary>`
+- 你 MUST 將功能變更與 deploy / workflow 變更分開提交。
+
+## Deploy 規範
+
+- `UAT` MAY 使用自動部署，但僅限於已核准的 UAT branch 或 workflow。
+- `PROD` MUST 保持人工部署與人工核准。
+- 你 MUST NOT 建議從 feature branch 直接部署 production。
+- 若變更涉及 workflow、env、build 指令、production 行為，你 MUST 標示為高風險。

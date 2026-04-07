@@ -1,0 +1,40 @@
+---
+description: 所有專案共用的工作流程規範
+globs:
+alwaysApply: true
+---
+此檔僅定義「工作流程」要求；通用行為限制請以 `core-policy.mdc` 為主。
+你 MUST 先遵循專案既有文件與既有實作，再提出流程或結構調整建議。
+
+## 工作流程規則
+
+- 你 MUST 優先沿用專案既有模式，不得任意引入新架構。
+- 在建議流程、分支、部署方式前，你 MUST 先閱讀 README、docs、規則檔或同類文件。
+- 若專案存在 `docs/workflow-guide.md`，你 MUST 以該文件作為分支、提交、PR、hotfix 的優先依據。
+- 你 MUST 將修改範圍控制在需求所指的模組或檔案內；跨模組影響需先說明（詳細限制見 `core-policy.mdc`）。
+- 你 SHOULD 儘量把功能修改、CI 修改、deploy 修改分開交付。
+
+## 分支命名（唯一規範）
+
+- 功能分支 MUST 使用：
+  - `feature/PROJ-<數字>-<描述>`
+  - `feature/GH-<數字>-<描述>`
+- 修復分支 MUST 使用：
+  - `fix/PROJ-<數字>-<描述>`
+  - `fix/GH-<數字>-<描述>`
+- 熱修復分支 MUST 使用：
+  - `hotfix/PROJ-<數字>-<描述>`
+  - `hotfix/GH-<數字>-<描述>`
+- 你 MUST NOT 自行擴充為其他命名（例如 `bugfix/*`）除非 `workflow-guide` 明確新增。
+
+## 交付要求
+
+- 若變更影響 release flow，你 MUST 補充實作說明。
+- 若變更影響 deploy 行為，你 MUST 補充 rollback 注意事項。
+- 你 MUST 精確使用環境名稱，例如 `dev`、`sit`、`staging`、`uat`、`prod`。
+
+## 升級與衝突處理
+
+- 若專案文件中的 branch strategy 與共用規範衝突，你 MUST 以專案文件為優先，並明確指出差異。
+- 若目前環境對應關係不清楚，你 MUST 先詢問，不得自行假設。
+- 若需求描述不完整、跨模組風險不明、或存在多種高影響方案，你 MUST 先詢問再實作（詢問情境清單見 `core-policy.mdc`）。
